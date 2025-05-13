@@ -1,5 +1,5 @@
 use std::time::Duration;
-use log::{error, info, warn};
+use log::{error, info, warn, debug};
 
 use reqwest::Client;
 use totp_rs::{Algorithm, TOTP, Secret};
@@ -19,14 +19,14 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
     env_logger::builder()
-        .filter_level(log::LevelFilter::Debug)
+        .filter_level(log::LevelFilter::Info)
         .format_target(false)
         .format_timestamp(None)
         .init();
-    let args = Args::parse();
+    let args: Args = Args::parse();
 
     // Create the TOTP instance
-    let totp = TOTP::new(
+    let totp: TOTP = TOTP::new(
         TOTP_ALGORITHM,
         TOTP_DIGITS,
         1,
@@ -35,19 +35,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )?;
 
     // Generate the current TOTP code
-    let token = totp.generate_current()?;
+    let mut token: String = totp.generate_current()?;
     info!("Generated TOTP token: {}", token);
 
     // Send the TOTP code to the local service
-    let client = Client::new();
+    let client: Client = Client::new();
     loop {
+        match totp.check_current(&token) {
+            Ok(true) => {
+                debug!("TOTP token is valid.");
+            }
+            Ok(false) => {
+                info!("TOTP token is invalid. Regenerating...");
+                token = totp.generate_current()?;
+            }
+            Err(e) => {
+                error!("Error checking TOTP token: {}", e);
+            }
+        }
         match client
             .get(&format!("http://localhost:4646/ffxivlauncher/{}", token))
-            .timeout(Duration::from_secs(5)) // Optional: Add a timeout to avoid hanging
+            .timeout(Duration::from_secs(5))
             .send()
             .await
         {
-            Ok(response) => {
+            Ok(response ) => {
                 if response.status().is_success() {
                     info!("TOTP token sent successfully.");
                     break;
@@ -57,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             Err(e) => {
                 if e.is_connect() {
-                    warn!("Connection refused. Retrying...");
+                    info!("Connection refused. Retrying...");
                 } else {
                     error!("Unexpected error: {}", e);
                 }
