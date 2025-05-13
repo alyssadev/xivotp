@@ -3,6 +3,8 @@ on:
     branches: [ "main" ]
 
 name: Release
+permissions:
+  contents: write
 
 jobs:
   release_assets:
@@ -36,6 +38,22 @@ jobs:
           target: ${{ matrix.config.target }}
           override: true
           default: true
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-${{ matrix.config.target }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-${{ matrix.config.target }}-
 
       - name: Downgrade cross
         uses: actions-rs/cargo@v1
