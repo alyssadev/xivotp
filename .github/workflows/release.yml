@@ -18,8 +18,6 @@ jobs:
           - {os: ubuntu-latest, toolchain: stable, target: aarch64-unknown-linux-gnu, target_cpu: generic, cross: true}
           - {os: ubuntu-latest, toolchain: stable, target: arm-unknown-linux-gnueabi, target_cpu: generic, cross: true}
           - {os: ubuntu-latest, toolchain: stable, target: armv7-unknown-linux-gnueabihf, target_cpu: generic, cross: true}
-          - {os: ubuntu-latest, target: mips64el-unknown-linux-gnuabi64, cross: true}
-          - {os: ubuntu-latest, target: powerpc64le-unknown-linux-gnu, cross: true}
           - {os: ubuntu-latest, toolchain: stable,  target: x86_64-unknown-linux-musl, target_cpu: generic, cross: true}
           - {os: ubuntu-latest, toolchain: stable,  target: x86_64-unknown-linux-musl, target_cpu: broadwell, cross: true}
           - {os: ubuntu-latest, toolchain: stable, target: aarch64-linux-android, target_cpu: generic, cross: true}
@@ -56,7 +54,7 @@ jobs:
         with:
           use-cross: ${{ matrix.config.cross }}
           command: rustc
-          args: --manifest-path Cargo.toml --release --target ${{ matrix.config.target }} --bin xivotp --no-default-features -- -C target-cpu=${{ matrix.config.target_cpu }} -C lto
+          args: --manifest-path Cargo.toml --release --target ${{ matrix.config.target }} --bin xivotp --no-default-features -- -C target-cpu=${{ matrix.config.target_cpu }} -C target-feature=+crt-static
 
       - name: Pack binaries if unix
         if: matrix.config.os != 'windows-latest'
